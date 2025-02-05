@@ -1,9 +1,10 @@
-
+Cython
 streamlit==1.41.1
 pandas==2.0.2
 catboost==1.2
 matplotlib==3.7.1
 numpy==2.2.0
 scikit-learn==1.2.2
+scikit-learn --only-binary :all:
 shap==0.45.1
 
