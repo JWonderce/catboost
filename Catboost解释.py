@@ -1,134 +1,85 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 
+import streamlit as st  # 导入 Streamlit 库，用于创建 Web 应用
+import pandas as pd  # 导入 Pandas 库，用于数据处理
+import pickle  # 导入 pickle 库，用于加载已训练的模型
+import os  # 导入 os 库，用于处理文件路径
+import shap  # 导入 SHAP 库，用于解释模型
 
-# 加载数据
-X_test = pd.read_csv("C:/Users/孔莱熙/Desktop/X_test.csv")
-y_test = pd.read_csv("C:/Users/孔莱熙/Desktop/y_test.csv")
-X_train = pd.read_csv("C:/Users/孔莱熙/Desktop/X_train.csv")
-y_train = pd.read_csv("C:/Users/孔莱熙/Desktop/y_train.csv")
+# 加载模型
+# 获取当前文件的目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 组合当前目录与模型文件名，生成模型的完整路径
+model_path = os.path.join(current_dir, 'catboost_model.pkl')
+# 打开并加载模型
+with open(model_path, 'rb') as file:
+    model = pickle.load(file)  # 使用 pickle 加载模型文件
 
-from sklearn.metrics import mean_squared_error
-from catboost import CatBoostRegressor
-from sklearn.model_selection import KFold  # 导入KFold
-from catboost import CatBoostRegressor
-import numpy as np
-from sklearn.metrics import mean_squared_error
-import pandas as pd
-# CatBoost模型参数
-params_cat = {
-    'learning_rate': 0.0086,  # 学习率，控制每一步的步长，用于防止过拟合。典型值范围：0.01 - 0.1
-    'iterations': 136,  # 弱学习器（决策树）的数量
-    'depth': 5,  # 决策树的深度，控制模型复杂度
-    'eval_metric': 'RMSE',  # 评估指标，这里使用均方根误差（Root Mean Squared Error，简称RMSE）
-    'random_seed': 42,  # 随机种子，用于重现模型的结果
-    'verbose': 500  # 控制CatBoost输出信息的详细程度，每100次迭代输出一次
-}
+# 设置 Streamlit 应用的标题
+st.title("2型糖尿病血糖控制预测模型")
 
-# 准备k折交叉验证
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-scores = []
-best_score = np.inf
-best_model = None
+# 在侧边栏中输入特征
+st.sidebar.header("输入特征")  # 侧边栏的标题
 
-# 交叉验证
-for fold, (train_index, val_index) in enumerate(kf.split(X_train, y_train)):
-    X_train_fold, X_val_fold = X_train.iloc[train_index], X_train.iloc[val_index]
-    y_train_fold, y_val_fold = y_train.iloc[train_index], y_train.iloc[val_index]
+# 使用滑动条接收输入特征，设置合适的范围和默认值
+diabetes_duration = st.sidebar.slider("糖尿病病程 (年)", min_value=0, max_value=20, value=5, step=1)
+cvd = st.sidebar.slider("心血管病变 (0 = 无, 1 = 有)", min_value=0, max_value=1, value=0, step=1)
+comorbidities = st.sidebar.slider("慢性合并症数量", min_value=0, max_value=5, value=1, step=1)
+neuropathy = st.sidebar.slider("糖尿病周围神经病变 (0 = 无, 1 = 有)", min_value=0, max_value=1, value=0, step=1)
+sbp = st.sidebar.slider("收缩压 (SBP, mmHg)", min_value=80, max_value=200, value=120, step=5)
+bmi = st.sidebar.slider("体重指数 (BMI, kg/m²)", min_value=10.0, max_value=50.0, value=25.0, step=0.1)
+ldl = st.sidebar.slider("低密度脂蛋白 (LDL-C, mg/dL)", min_value=50, max_value=200, value=100, step=5)
+fpg = st.sidebar.slider("空腹血糖 (FPG, mmol/L)", min_value=3.0, max_value=15.0, value=6.0, step=0.1)
+diet_score = st.sidebar.slider("饮食标准分", min_value=0, max_value=10, value=5, step=1)
+exercise_score = st.sidebar.slider("运动标准分", min_value=0, max_value=10, value=5, step=1)
+medication_score = st.sidebar.slider("服药标准分", min_value=0, max_value=10, value=5, step=1)
+blood_sugar_monitoring_score = st.sidebar.slider("血糖监测标准分", min_value=0, max_value=10, value=5, step=1)
+monthly_blood_sugar_checks = st.sidebar.slider("每月血糖检测次数", min_value=0, max_value=30, value=5, step=1)
 
-    model = CatBoostRegressor(**params_cat)
-    model.fit(X_train_fold, y_train_fold, eval_set=(X_val_fold, y_val_fold), early_stopping_rounds=100)
+# 创建输入数据框，将输入的特征整理为 DataFrame 格式
+input_data = pd.DataFrame({
+    '糖尿病病程': [diabetes_duration],
+    '心血管病变': [cvd],
+    '慢性合并症数量': [comorbidities],
+    '糖尿病周围神经病变': [neuropathy],
+    'SBP': [sbp],
+    'BMI': [bmi],
+    'LDL-C': [ldl],
+    'FPG': [fpg],
+    '饮食标准分': [diet_score],
+    '运动标准分': [exercise_score],
+    '服药标准分': [medication_score],
+    '血糖监测标准分': [blood_sugar_monitoring_score],
+    '每月血糖检测次数': [monthly_blood_sugar_checks]
+})
 
-    # 预测并计算得分
-    y_val_pred = model.predict(X_val_fold)
-    score = mean_squared_error(y_val_fold, y_val_pred)  # RMSE
-    scores.append(score)
-    print(f'第 {fold + 1} 折 RMSE: {score}')
+# 添加预测按钮，用户点击后进行模型预测
+if st.button("预测"):
+    prediction = model.predict(input_data)  # 使用加载的模型进行预测
+    if prediction[0] == 0:
+        st.write("预测结果: 血糖控制良好 (HbA1c < 7%)")
+    else:
+        st.write("预测结果: 血糖未控制 (HbA1c ≥ 7%)")
 
-    # 保存得分最好的模型
-    if score < best_score:
-        best_score = score
-        best_model = model
+    # 计算 SHAP 值
+    explainer = shap.Explainer(model)  # 或者使用 shap.TreeExplainer(model) 来计算树模型的 SHAP 值
+    shap_values = explainer(input_data)
 
-print(f'最佳 RMSE: {best_score}')
-from sklearn import metrics
+    # 提取单个样本的 SHAP 值和期望值
+    sample_shap_values = shap_values[0]  # 提取第一个样本的 SHAP 值
+    expected_value = explainer.expected_value[0]  # 获取对应输出的期望值
 
-# 使用最佳模型进行测试集预测
-y_pred_four = best_model.predict(X_test)
-y_pred_list = y_pred_four.tolist()
+    # 创建 Explanation 对象
+    explanation = shap.Explanation(
+        values=sample_shap_values[:, 0],  # 选择特定输出的 SHAP 值
+        base_values=expected_value,
+        data=input_data.iloc[0].values,
+        feature_names=input_data.columns.tolist()
+    )
 
-#保存模型以pkl格式
-import pickle
-# 保存最佳 CatBoost 模型为 pkl 文件
-with open('catboost_model.pkl', 'wb') as file:
-    pickle.dump(best_model, file)
+    # 保存为 HTML 文件
+    shap.save_html("shap_force_plot.html", shap.plots.force(explanation, show=False))
 
-print("最佳模型已保存为 best_catboost_model.pkl")
-# 计算评估指标
-mse = metrics.mean_squared_error(y_test, y_pred_list)
-rmse = np.sqrt(mse)
-mae = metrics.mean_absolute_error(y_test, y_pred_list)
-r2 = metrics.r2_score(y_test, y_pred_list)
-
-# 输出评估结果
-print("均方误差 (MSE):", mse)
-print("均方根误差 (RMSE):", rmse)
-print("平均绝对误差 (MAE):", mae)
-print("拟合优度 (R-squared):", r2)
-
-import shap
-import matplotlib.pyplot as plt
-
-
-# 设置matplotlib的中文字体
-plt.rcParams['font.family'] = 'Microsoft YaHei'  # 或者使用 'SimHei'（黑体）
-plt.rcParams['font.size'] = 5  # 设置字体大小
-
-# 构建 shap 解释器
-explainer = shap.TreeExplainer(best_model)
-
-# 计算测试集的 shap 值
-shap_values = explainer.shap_values(X_test)
-
-# 如果是分类模型，shap_values 可能是一个列表，转换为 Explanation 对象时要传递正确的列名
-shap_values = shap.Explanation(values=shap_values,
-                               base_values=explainer.expected_value,
-                               data=X_test,
-                               feature_names=X_test.columns)
-#绘制特征重要性图
-shap.plots.bar(shap_values, max_display=13)  # 设置为显示所有 13 个特征
-# 特征标签
-labels = X_test.columns
-
-# 设置中文字体
-plt.rcParams['font.family'] = 'Microsoft YaHei'  # 或 'SimHei'
-plt.rcParams['font.serif'] = 'Times New Roman'
-plt.rcParams['font.size'] = 13
-
-# 绘制 SHAP summary plot解释摘要图
-plt.figure()
-shap.summary_plot(shap_values, X_test, feature_names=labels, plot_type="dot")
-
-
-
-
-import shap
-import numpy as np
-
-# 选择一个样本的索引
-sample_index = 7  # 替换为你想选择的样本索引
-
-# 保留 SHAP 值的小数三位
-shap_values_rounded = np.round(shap_values, 3)
-
-# 绘制单个样本的 Force Plot
-shap.force_plot(explainer.expected_value, shap_values_rounded[sample_index], X_test.iloc[sample_index], matplotlib=True)
-
-#热图
-# 创建 shap.Explanation 对象
-shap_explanation = shap.Explanation(values=shap_values[0:500,:],
-                                    base_values=explainer.expected_value,
-                                    data=X_test.iloc[0:500,:], feature_names=X_test.columns)
-# 绘制热图
-# shap.plots.heatmap(shap_explanation)
+    # 在 Streamlit 中显示 HTML
+    st.subheader("模型预测的 SHAP 力图")
+    with open("shap_force_plot.html") as f:
+        st.components.v1.html(f.read(), height=600)
