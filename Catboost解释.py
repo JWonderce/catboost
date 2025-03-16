@@ -55,31 +55,35 @@ input_data = pd.DataFrame({
 
 
  
-# 添加预测按钮，用户点击后进行模型预测
+# 添加预测按钮
 if st.button("预测"):
+    # 使用模型进行预测
     prediction = model.predict(input_data)
-    st.write(f"血糖控制达标可能性: {prediction[0]}")
+    st.write(f"血糖控制达标可能性: {prediction[0]}")  # 仅显示第一个样本的预测结果
 
     # 计算 SHAP 值
-    explainer = shap.TreeExplainer(model)  # 如果是树模型
-    shap_values = explainer(input_data)  # 计算 SHAP 值
+    explainer = shap.TreeExplainer(model)  # 计算树模型的 SHAP 值
+    shap_values = explainer(input_data)
 
-    # 选择一个样本进行 SHAP 分析（索引 169）
-    sample_shap_values = shap_values.values[169]  # 取 SHAP 值
-    expected_value = explainer.expected_value  # 期望值
+    # 检查输入数据形状
+    st.write(f"输入数据形状: {input_data.shape}")
 
-    # 创建 Explanation 对象
+    # 选择第一个样本进行 SHAP 解释
+    sample_shap_values = shap_values[0]  # 确保索引 0 有效
+    expected_value = explainer.expected_value  # 获取 SHAP 期望值
+
+    # 创建 SHAP Explanation 对象
     explanation = shap.Explanation(
-        values=sample_shap_values,  # 选择索引 169 的 SHAP 值
+        values=sample_shap_values.values,  # SHAP 值
         base_values=expected_value,  # 期望值
-        data=input_data.iloc[169].values,  # 选择索引 169 的输入数据
-        feature_names=input_data.columns.tolist()
+        data=input_data.iloc[0].values,  # 该样本的输入特征
+        feature_names=input_data.columns.tolist()  # 特征名称
     )
 
-    # 保存为 HTML 文件
+    # 生成 SHAP 力图并保存为 HTML
     shap.save_html("shap_force_plot.html", shap.plots.force(explanation, show=False))
 
-    # 在 Streamlit 中显示 HTML
-    st.subheader("模型预测的力图")
+    # 在 Streamlit 中显示 SHAP 力图
+    st.subheader("模型预测的 SHAP 力图")
     with open("shap_force_plot.html") as f:
         st.components.v1.html(f.read(), height=600)
