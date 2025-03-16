@@ -16,11 +16,10 @@ with open(model_path, 'rb') as file:
 # 设置 Streamlit 应用的标题
 st.title("2型糖尿病血糖控制预测模型")
 
-# 在侧边栏中输入特征
-st.sidebar.header("输入特征")  # 侧边栏的标题
+
 
 # 使用滑动条接收输入特征，设置合适的范围和默认值
-diabetes_duration = st.sidebar.slider("糖尿病病程 (年)", min_value=0, max_value=20, value=5, step=1)
+diabetes_duration = st.sidebar.slider("糖尿病病程 (1=小于5年, 2=5-10年,3=大于10年)", min_value=1, max_value=3, value=1, step=1)
 cvd = st.sidebar.slider("心血管病变 (0 = 无, 1 = 有)", min_value=0, max_value=1, value=0, step=1)
 comorbidities = st.sidebar.slider("慢性合并症数量", min_value=0, max_value=5, value=1, step=1)
 neuropathy = st.sidebar.slider("糖尿病周围神经病变 (0 = 无, 1 = 有)", min_value=0, max_value=1, value=0, step=1)
