@@ -57,27 +57,26 @@ if st.button("预测"):
    prediction = model.predict(input_data)
    st.write(f"血糖控制达标可能性: {prediction[0]}")
 
-# 计算 SHAP 值
-# explainer =  shap.TreeExplainer(model) 来计算树模型的 SHAP 值
-# shap_values = explainer(input_data)
-# 选择一个样本进行 SHAP 分析
-# 提取单个样本的 SHAP 值和期望值
-# sample_shap_values = shap_values[169]  # 提取第一个样本的 SHAP 值
-# expected_value = explainer.expected_value[169]  # 获取对应输出的期望值
-# 创建 Explanation 对象
-# 创建 Explanation 对象
-# 创建 Explanation 对象
-explanation = shap.Explanation(
-    values=sample_shap_values[169, :],  # 选择索引 169 的 SHAP 值
-    base_values=expected_value,
-    data=input_data.iloc[169].values,  # 选择索引 169 的输入数据
-    feature_names=input_data.columns.tolist()
-)
+ # 计算 SHAP 值
+    explainer = shap.TreeExplainer(model)  # 如果是树模型
+    shap_values = explainer(input_data)  # 计算 SHAP 值
 
-# 保存为 HTML 文件
-shap.save_html("shap_force_plot.html", shap.plots.force(explanation, show=False))
+    # 选择一个样本进行 SHAP 分析（索引 169）
+    sample_shap_values = shap_values.values[169]  # 取 SHAP 值
+    expected_value = explainer.expected_value  # 期望值
 
-# 在 Streamlit 中显示 HTML
-st.subheader("模型预测的力图")
-with open("shap_force_plot.html") as f:
-    st.components.v1.html(f.read(), height=600)
+    # 创建 Explanation 对象
+    explanation = shap.Explanation(
+        values=sample_shap_values,  # 选择索引 169 的 SHAP 值
+        base_values=expected_value,  # 期望值
+        data=input_data.iloc[169].values,  # 选择索引 169 的输入数据
+        feature_names=input_data.columns.tolist()
+    )
+
+    # 保存为 HTML 文件
+    shap.save_html("shap_force_plot.html", shap.plots.force(explanation, show=False))
+
+    # 在 Streamlit 中显示 HTML
+    st.subheader("模型预测的力图")
+    with open("shap_force_plot.html") as f:
+        st.components.v1.html(f.read(), height=600)
