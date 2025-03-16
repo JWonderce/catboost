@@ -65,10 +65,12 @@ if st.button("预测"):
 # sample_shap_values = shap_values[169]  # 提取第一个样本的 SHAP 值
 # expected_value = explainer.expected_value[169]  # 获取对应输出的期望值
 # 创建 Explanation 对象
+# 创建 Explanation 对象
+# 创建 Explanation 对象
 explanation = shap.Explanation(
-    values=sample_shap_values[:, 0],  # 选择特定输出的 SHAP 值
+    values=sample_shap_values[169, :],  # 选择索引 169 的 SHAP 值
     base_values=expected_value,
-    data=input_data.iloc[0].values,
+    data=input_data.iloc[169].values,  # 选择索引 169 的输入数据
     feature_names=input_data.columns.tolist()
 )
 
