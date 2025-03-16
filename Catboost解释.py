@@ -52,12 +52,15 @@ input_data = pd.DataFrame({
     '每月血糖检测次数': [monthly_blood_sugar_checks]
 })
 
+
+
+ 
 # 添加预测按钮，用户点击后进行模型预测
 if st.button("预测"):
-   prediction = model.predict(input_data)
-   st.write(f"血糖控制达标可能性: {prediction[0]}")
+    prediction = model.predict(input_data)
+    st.write(f"血糖控制达标可能性: {prediction[0]}")
 
- # 计算 SHAP 值
+    # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)  # 如果是树模型
     shap_values = explainer(input_data)  # 计算 SHAP 值
 
