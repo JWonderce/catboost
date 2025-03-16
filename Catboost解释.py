@@ -64,8 +64,7 @@ if st.button("预测"):
     explainer = shap.TreeExplainer(model)  # 计算树模型的 SHAP 值
     shap_values = explainer(input_data)
 
-    # 检查输入数据形状
-    st.write(f"输入数据形状: {input_data.shape}")
+   
 
     # 选择第一个样本进行 SHAP 解释
     sample_shap_values = shap_values[0]  # 确保索引 0 有效
