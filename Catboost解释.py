@@ -33,19 +33,19 @@ monthly_blood_sugar_checks = st.sidebar.slider("Monthly Frequency of Blood Gluco
 
 # Create a DataFrame from the input features
 input_data = pd.DataFrame({
-    '糖尿病病程': [diabetes_duration],
-    '心血管病变': [cvd],
-    '慢性合并症数量': [comorbidities],
-    '糖尿病周围神经病变': [neuropathy],
+    'Diabetes_Duration': [diabetes_duration],
+    'Cardiovascular_Disease': [cvd],
+    'Num_Comorbidities': [comorbidities],
+    'Peripheral_Neuropathy': [neuropathy],
     'SBP': [sbp],
     'BMI': [bmi],
-    'LDL-C': [ldl],
+    'LDL_C': [ldl],
     'FPG': [fpg],
-    '饮食标准分': [diet_score],
-    '运动标准分': [exercise_score],
-    '服药标准分': [medication_score],
-    '血糖监测标准分': [blood_sugar_monitoring_score],
-    '每月血糖检测次数': [monthly_blood_sugar_checks]
+    'Diet_Score': [diet_score],
+    'Exercise_Score': [exercise_score],
+    'Medication_Score': [medication_score],
+    'Blood_Glucose_Monitoring_Score': [blood_sugar_monitoring_score],
+    'Monthly_Blood_Glucose_Tests': [monthly_blood_sugar_checks]
 })
 
 # Prediction button
